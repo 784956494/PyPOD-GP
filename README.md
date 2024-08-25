@@ -1,5 +1,5 @@
 # PyPOD-GP
-In repository, we implement a Pytorch-based implementation of the (localized) POD-GP method that enables GPU utilization during both the learnining and inferece stages. We provide an example running script in **run_pod.py** for reference.
+In repository, we implement a Pytorch-based implementation of the (localized) POD-GP method that enables GPU utilization during both the learnining and inferece stages. We provide an example running script in ```run_pod.py``` for reference.
 
 ## Setup
 To use our code, first create a Python 3.10 environment and install FEniCS, Dolfin, and mshr following the instructions from their official website: 
@@ -11,8 +11,8 @@ Then install the requirements with the command:
 pip install -r requirements.txt
 ```
 ## Learning(Training)
-To use our example script for training, create a **PyPOD_GP** object by adjusting the following arguments in command line:
-``
+To use our example script for training, create a ```PyPOD_GP``` object by adjusting the following arguments in command line:
+```
 optional arguments:
   -h, --help            show this help message and exit
   --x X                 space dimension for x-axis in mesh
@@ -37,7 +37,7 @@ optional arguments:
   --task TASK           which task to perform, can be any of [train, predict, both]
   --save-format SAVE_FORMAT 
                         which format to save/read the trained constants, can be any of [txt, csv]
-``
+```
 Then modify the script with paths to the corresponding dataset, floor plan file, and power density file for each floor plan. Then run the following command for training and saving the results:
 ```
 python run_pod.py --[ARGUMENTS] --save 1 --save-dir [PATHS] --task train --save-format [FORMAT]
@@ -48,6 +48,7 @@ To predict the temperature when there are already trained constants saved, simpl
 ```
 python run_pod.py --[ARGUMENTS] --task predict --save-dir [PATHS TO CONSTANTS] --save-format [FORMAT]
 ```
+Note that the script assume that the modes and constants are saved in a particular format, namely ```save-dir/[mode/C/G/Ps_matrix]_[Nu].[format]```.
 
 ## Complete Training and Prediction Procedure
 To run the entire training and inference program, run the following command:

@@ -20,6 +20,7 @@ def run_prediction(args):
     print(device)
     if args.task in ['train', 'both']:
         flp = [0] * args.Nu
+        #for floor plan
         for i in range(args.Nu):
             flp[i] = np.loadtxt('i-th floor plan path')
         pds = [0] * args.Nu
@@ -121,9 +122,13 @@ def run_prediction(args):
                     raise NotImplementedError("save format not supported")
         
         if args.task == 'both':
-            temps = model.predict_thermal(C_list, G_list, P_list)
-            df = pd.DataFrame(temps.detach().cpu().numpy()) #convert to a dataframe
-            df.to_csv(args.save_dir + "results.csv",index=False, header=False) #save to file
+            CU = model.infer(C_list, G_list, P_list)
+            for i in range(args.Nu):
+                if args.save_format == 'csv':
+                    df = pd.DataFrame(temps[i].detach().cpu().numpy()) #convert to a dataframe
+                    df.to_csv(args.save_dir + "temsp_" + str(i) + ".csv",index=False, header=False) #save to file
+                elif args.save_format == 'txt':
+                    np.savetxt(args.save_dir + "temsp_" + str(i) + ".txt", temps[i].detach().cpu().numpy())
     elif args.task == 'predict':
         C_list = []
         G_list = []
@@ -143,9 +148,21 @@ def run_prediction(args):
                 G_list.append(torch.tensor(G, dtype=torch.float64).to(device))
                 Ps_matrix = np.genfromtxt(args.save_dir + "Ps_matrix_" + str(i) + ".txt", delimiter=",")
                 P_list.append(torch.tensor(Ps_matrix, dtype=torch.float64).to(device))
-        temps = model.predict_thermal(C_list, G_list, P_list)
-        df = pd.DataFrame(temps.detach().cpu().numpy()) #convert to a dataframe
-        df.to_csv(args.save_dir + "results.csv",index=False, header=False) #save to file
+        model = PyPOD_GP(args, device)
+        datapath = [[0]*args.timesteps] * args.Nu
+        for j in range(args.Nu):
+            for i in range(args.time_steps):
+                datapath[j][i] = 'mode data path for j-th functional unit and i-th time step'
+        for i in range(args.Nu):
+            model.read_modes(datapath[i], i)
+        CU = model.infer(C_list, G_list, P_list)
+        temps = model.predict_thermal(CU)
+        for i in range(args.Nu):
+            if args.save_format == 'csv':
+                df = pd.DataFrame(temps[i].detach().cpu().numpy()) #convert to a dataframe
+                df.to_csv(args.save_dir + "temsp_" + str(i) + ".csv",index=False, header=False) #save to file
+            elif args.save_format == 'txt':
+                np.savetxt(args.save_dir + "temsp_" + str(i) + ".txt", temps[i].detach().cpu().numpy())
 if __name__ == '__main__':
     args = parser.parse_args()
     run_prediction(args)

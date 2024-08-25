@@ -19,8 +19,7 @@ class PyPOD_GP:
         self.subdomain_config = subdomain_config
         self.surfaces = args.surfaces
         self.steps = args.steps
-        # self.final_time = args.final_time
-        self.modes_data = 0
+        self.modes_data = []
         self.degree = args.degree
 
     def prcoess_data(self, datapath):
@@ -79,6 +78,36 @@ class PyPOD_GP:
             cell_values[i] = data.reshape(-1, 4).t() #each row is vertex i of tetrahedron
         vertex_data = torch.from_numpy(np.array(vertex_data)).to(self.device)
         return cell_values, vertex_data, cell_to_vertex, coord, jacobian, ds_dofs, ds_coord
+    
+    def read_modes(self, datapath, idx):
+        V = FunctionSpace(self.mesh, 'P', 1)
+        dofmap = V.dofmap()
+        cell_to_vertex = []
+        for i in range(self.data_size):
+            dofs = dofmap.cell_dofs(i)
+            cell_to_vertex.extend(dofs)
+
+        if isinstance(self.num_modes, list):
+            num_modes = self.num_modes[idx]
+        else:
+            num_modes = self.num_modes
+        modes = torch.zeros(num_modes, 4, self.data_size).double().to(self.device)
+        modes_data = []
+        for i in range(self.time_steps):
+            filename = datapath[i]
+            solution_file = HDF5File(self.mesh.mpi_comm(), filename, "r")
+            solution_file.read(u, "solution")
+            sol = interpolate(u0,V)
+            sol.assign(u)
+            s = sol.vector()[:]
+            modes_data.append(s)
+
+        for i in range(num_modes):
+            m = torch.tensor([modes_data[i][x] for x in cell_to_vertex], dtype=torch.float64).to(self.device).reshape(-1, 4).t()
+            modes[i] = m
+        
+        self.modes_data.append(modes_data.cpu())
+        return modes
 
     def train(self, datapath, density_expression, heat_expression, pd_func, kappa_expression, h_c=1.0, idx=0):
         #set the number of modes to use
@@ -99,7 +128,7 @@ class PyPOD_GP:
         #Compute A matrix
         A = utils.calc_A(data, self.time_steps, jacobian.to(data.dtype), self.device, self.degree)
 
-        # #Compute POD modes
+        #Compute POD modes
         modes_data = utils.get_modes(A, vertex_data, num_modes, self.data_size, self.time_steps, jacobian, cell_to_vertex)
     
         #read in modes
@@ -111,7 +140,7 @@ class PyPOD_GP:
             modes[i] = m
             ds_modes[i] = d
 
-        # #Compute C matrix
+        #Compute C matrix
         C = utils.calc_C(modes, num_modes, jacobian, density_expression, heat_expression, coord, self.device, self.degree, torch.float64)
 
         #compute jacobian for surface integral
@@ -124,23 +153,31 @@ class PyPOD_GP:
         #Compute G matrix
         G = utils.calc_G(modes, num_modes, kappa_expression, h_c, jacobian, coord, grad_coord, ds_area, ds_modes)
         
-        # #Compute P vector
+        #Compute P vector
         P = utils.calc_P(modes, num_modes, jacobian, pd_func, coord, self.degree, self.device, torch.float64, idx)
             
         #save modes for temperature
-        self.modes_data = modes_data
+        self.modes_data.append(modes_data.cpu())
         return C, G, P
 
-    def predict_thermal(self, C, G, P, multiple=True):
+    def infer(self, C, G, P, multiple=True):
         #run ODE solver
         ode_solver = utils.POD_ODE_Solver(C, G, P, self.time_steps, self.num_modes, self.steps, self.sampling_interval, multiple)
         CU = ode_solver.solve()
+        return CU
+        
+    def predict_thermal(self, CU):
+        #move modes to proper device
+        for i in range(self.Nu):
+            self.modes_data[i] = self.modes_data.to(self.device)
         #predict thermal
         temps = []
-        for i in range(self.time_steps):
-            x = CU[i].reshape(1,-1).t()
-            x = x.reshape(-1,1)
-            temps.append(self.modes_data * x)
+        temps = []
+        for j in range(self.Nu):
+            temp = torch.zeros(self.time_steps, self.data_size).double().to(self.device)
+            for i in range(self.time_steps):
+                x = CU[i].reshape(1,-1).t()
+                x = x.reshape(-1,1)
+                temp[i] = (self.modes_data * x).sum(dim=0)
+            temps.appendt(temp)
         return temps
-        
-        
