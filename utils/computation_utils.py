@@ -2,9 +2,6 @@ import torch
 from fenics import *
 from dolfin import * 
 from mshr import *
-import numpy as np
-import time
-import h5py
 from utils.integration_utils import get_quad_points, get_interpolation, barycentric_gradients, get_weights
 
 def calc_A(data, time_steps, jacobian, device, degree):

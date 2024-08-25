@@ -44,18 +44,22 @@ config_args = {
         'x': (0.014, 'space dimension for x-axis in mesh'),
         'y': (0.012, 'space dimension for y-axis in mesh'),
         'z': (0.00065, 'space dimension for z-axis in mesh'),
-        'x_dim': (129, 'number of cells in x-axis'),
-        'y_dim': (129, 'number of cells in y-axis'),
-        'z_dim': (14, 'number of cells in z-axis'),
-        'time_steps': (240, 'time steps for discretization'),
+        'x-dim': (129, 'number of cells in x-axis'),
+        'y-dim': (129, 'number of cells in y-axis'),
+        'z-dim': (14, 'number of cells in z-axis'),
+        'time-steps': (240, 'time steps for discretization'),
         'cuda': (-1, 'which cuda device to use (-1 for cpu training)'),
         'tol': (1e-14, 'padding for float point comparisons'),
-        'num_modes': (8, 'the number of modes to use, could be integer or list'),
+        'num-modes': (8, 'the number of modes to use, could be integer or list'),
         'Nu': (11, 'the number of functional units'),
         'surfaces': (5, 'subdomain of interests for G matrix'),
-        'sampling_interval':(4.347826086956521e-6, 'the last time step'),
+        'sampling-interval':(4.347826086956521e-6, 'the last time step'),
         'degree': (2, 'the degree of polynomials to integrate'),
-        'steps': (20, 'the number of steps to take to solve the ODE')
+        'steps': (20, 'the number of steps to take to solve the ODE'),
+        'save': (0, 'whether or not to save training results'),
+        'save-dir':('log', 'paths to the direcotry to save training results'),
+        'task': ('both', 'which task to perform, can be any of [train, predict, both]'),
+        'save-format': ('txt', 'which format to save/read the trained constants, can be any of [txt, csv]')
     }
 }
 

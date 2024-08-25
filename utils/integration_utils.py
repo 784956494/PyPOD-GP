@@ -1,6 +1,5 @@
 import numpy as np
 import torch
-import pandas as pd
 from fenics import *
 from dolfin import * 
 from mshr import *
