@@ -44,11 +44,11 @@ python run_pod.py --[ARGUMENTS] --save 1 --save-dir [PATHS] --task train --save-
 ```
 
 ## Inference
-To predict the temperature when there are already trained constants saved, simple run the following command to get the inference results:
+To predict the temperature when there are already trained constants saved, simple run the following command to get the inference results after modifying the script to include the paths to the modes data:
 ```
 python run_pod.py --[ARGUMENTS] --task predict --save-dir [PATHS TO CONSTANTS] --save-format [FORMAT]
 ```
-Note that the script assume that the modes and constants are saved in a particular format, namely ```save-dir/[mode/C/G/Ps_matrix]_[Nu].[format]```.
+Note that the script assume that the modes and constants are saved in a particular format, namely ```save-dir/[C/G/Ps_matrix]_[Nu].[format]```.
 
 ## Complete Training and Prediction Procedure
 To run the entire training and inference program, run the following command:
