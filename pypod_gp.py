@@ -79,7 +79,7 @@ class PyPOD_GP:
         vertex_data = torch.from_numpy(np.array(vertex_data)).to(self.device)
         return cell_values, vertex_data, cell_to_vertex, coord, jacobian, ds_dofs, ds_coord
     
-    def read_modes(self, datapath, idx):
+    def read_modes(self, datapath, idx=-1):
         V = FunctionSpace(self.mesh, 'P', 1)
         dofmap = V.dofmap()
         cell_to_vertex = []
@@ -88,6 +88,7 @@ class PyPOD_GP:
             cell_to_vertex.extend(dofs)
 
         if isinstance(self.num_modes, list):
+            assert(idx>=0)
             num_modes = self.num_modes[idx]
         else:
             num_modes = self.num_modes
@@ -109,9 +110,10 @@ class PyPOD_GP:
         self.modes_data.append(modes_data.cpu())
         return modes
 
-    def train(self, datapath, density_expression, heat_expression, pd_func, kappa_expression, h_c=1.0, idx=0):
+    def train(self, datapath, density_expression, heat_expression, pd_func, kappa_expression, h_c=1.0, idx=-1):
         #set the number of modes to use
         if isinstance(self.num_modes, list):
+            assert(idx>=0)
             num_modes = self.num_modes[idx]
         else:
             num_modes = self.num_modes
@@ -154,8 +156,16 @@ class PyPOD_GP:
         G = utils.calc_G(modes, num_modes, kappa_expression, h_c, jacobian, coord, grad_coord, ds_area, ds_modes)
         
         #Compute P vector
-        P = utils.calc_P(modes, num_modes, jacobian, pd_func, coord, self.degree, self.device, torch.float64, idx)
-            
+        if idx != -1:
+            #calculate specifically for a single functional unit
+            P = utils.calc_P(modes, num_modes, jacobian, pd_func, coord, self.degree, self.device, torch.float64)
+        else:
+            #calculate for all functional units, to be used when doing prediction over entire chip and not over each individual functional units
+            P = torch.zeros(self.Nu, num_modes).double().to(self.device)
+            for i in range(self.Nu):
+                P_vec = utils.calc_P(modes, num_modes, jacobian, pd_func, coord, self.degree, self.device, torch.float64, i)
+                P[i] = P_vec
+            P = P.t()
         #save modes for temperature
         self.modes_data.append(modes_data.cpu())
         return C, G, P

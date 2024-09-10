@@ -67,7 +67,7 @@ def calc_C(modes, num_modes, jacobian, density_expression, heat_expression, coor
             C[j][i] = C[i][j]
     return C
 
-def calc_P(modes, num_modes, jacobian, pd_func, interp_coord, degree, device, dtype, Nu_idx):
+def calc_P(modes, num_modes, jacobian, pd_func, interp_coord, degree, device, dtype, Nu_idx=-1):
     quad_points = get_quad_points(degree, device, dtype) # get barycentric weights for quadrature
     weights = get_weights(degree, device=device, dtype=dtype).unsqueeze(dim=-1)
     P = torch.zeros(num_modes, 1).to(modes.device).to(dtype)
