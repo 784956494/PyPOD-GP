@@ -59,7 +59,7 @@ python run_pod.py --[ARGUMENTS] --save-dir [PATHS TO SAVE RESULTS] --task both
 ## Test CPU Data
 we provide a test dataset for the purpose of demonstration. To run the dataset, first download the CPU temperature data from 
 ```
-https://drive.google.com/file/d/1eAcigcb_mU1DUgM1J9ioVSaPj0RdfGQ-/view?usp=sharing
+https://drive.google.com/drive/folders/1-id6igacZXYnFBT5M6_n7BC4vvWY6NVF?usp=sharing
 ```
 The data was collected on a AMD ATHLON II X4 610e CPU chip. After downloading the dataset, edit the ```run_pod_cpu.py``` file for the corresponding paths of the files. The parameters in the ```config.py``` was already configured for this dataset. To run the code, simply run the command:
 ```
