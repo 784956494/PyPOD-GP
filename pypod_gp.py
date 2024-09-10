@@ -8,19 +8,17 @@ import utils
 
 class PyPOD_GP:
     def __init__(self, args, device, subdomain_config=None):
-        self.num_modes = args.num_modes
-        self.data_size = np.prod((args.x_dim - 1) * (args.y_dim - 1) * (args.z_dim - 1)) * 6
+        self.num_modes = args.num_modes #number of modes
+        self.data_size = np.prod((args.x_dim - 1) * (args.y_dim - 1) * (args.z_dim - 1)) * 6 #number of temperature points at each time step
         self.mesh = BoxMesh(Point(0, 0, 0), Point(args.x, args.y, args.z), args.x_dim - 1, args.y_dim - 1, args.z_dim - 1) #define mesh
-        self.tol = 1e-14
-        self.time_steps = args.time_steps
-        self.device = device
-        self.Nu = args.Nu
-        self.surfaces = args.surfaces
-        self.subdomain_config = subdomain_config
-        self.surfaces = args.surfaces
-        self.steps = args.steps
-        self.modes_data = []
-        self.degree = args.degree
+        self.tol = 1e-14 #for numerical stability
+        self.time_steps = args.time_steps #number of time steps
+        self.device = device 
+        self.Nu = args.Nu #number of functional unit
+        self.surfaces = args.surfaces #subdomain surface number to be used in G matrix
+        self.subdomain_config = subdomain_config #configurations for subdomain
+        self.modes_data = [] #save the modes for prediction
+        self.degree = args.degree #degree of quadrature interation
 
     def prcoess_data(self, datapath):
         assert(self.time_steps > 0)
@@ -39,23 +37,26 @@ class PyPOD_GP:
                 subdomain_id += 1
         dummy = Constant(0)
         bc = DirichletBC(V, dummy, boundary_markers, self.surfaces)
+        #get the cell sequence for subdomain
         ds_dofs = list(bc.get_boundary_values().keys())
 
         u = Function(V)
         u0 = Constant(0)
         dof_coordinates = V.tabulate_dof_coordinates()
         dofmap = V.dofmap()
-        cell_to_vertex = []
-        coord = []
-        jacobian = []
-        ds_coord = []
+        cell_to_vertex = [] #identifies which vertex belongs to which cell
+        coord = [] #coordinates of each vertex of each cell
+        jacobian = [] #(determinant of the) jacobian of each cell
+        ds_coord = [] #coordinate of each cell in subdomain data
         for i in range(self.data_size):
+            #for each cell, find the relevant data
             dofs = dofmap.cell_dofs(i)
             cell_to_vertex.extend(dofs)
             cell = Cell(self.mesh, i)
             coord.append(dof_coordinates[dofs])
             jacobian.append(cell.volume())
         for i in range(len(ds_dofs)):
+            #for each cell in subdomain, find the relevant data
             ds_coord.append(dof_coordinates[ds_dofs[i]])
 
         jacobian = torch.tensor(jacobian, dtype=torch.float64).to(self.device)
@@ -68,6 +69,7 @@ class PyPOD_GP:
 
         for i in range(self.time_steps):
             filename = datapath[i]
+            #read in the data
             solution_file = HDF5File(self.mesh.mpi_comm(), filename, "r")
             solution_file.read(u, "solution")
             solution[i] = interpolate(u0,V)
@@ -172,7 +174,7 @@ class PyPOD_GP:
 
     def infer(self, C, G, P, multiple=True):
         #run ODE solver
-        ode_solver = utils.POD_ODE_Solver(C, G, P, self.time_steps, self.num_modes, self.steps, self.sampling_interval, multiple)
+        ode_solver = utils.POD_ODE_Solver(C, G, P, self.time_steps, self.num_modes, self.time_steps, self.sampling_interval, multiple)
         CU = ode_solver.solve()
         return CU
         

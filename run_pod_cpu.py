@@ -26,8 +26,8 @@ def run_prediction(args):
     for i in range(args.time_steps):
         for j in range(args.Nu):
             pds[i,j] = pds[i,j] / (flp[j,0] * flp[j,1] * thick_actl)
-    
     pds = torch.tensor(pds, dtype=torch.float64).to(device)
+    
     def density_expression(coord):
         coord = coord[2].reshape(-1, 4).t().sum(dim=0)/4
         return torch.where(coord <= 5.85e-4 + 1E-14, 2.33e3, 2.65e3)
