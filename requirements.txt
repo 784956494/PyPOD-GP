@@ -1,6 +1,6 @@
-torch
-numpy
-h5py
-argparse
-mpi4py
-pandas
+torch==2.3.0
+numpy==1.21.0
+h5py==2.10.0
+mpi4py==3.0.3
+pandas==0.25.3
+python==3.10
