@@ -7,7 +7,7 @@ from utils.integration_utils import get_quad_points, get_interpolation, barycent
 def calc_A(data, time_steps, jacobian, device, degree):
     A = torch.zeros((time_steps, time_steps), dtype=data.dtype).to(device)
     quad_points = get_quad_points(degree, device, A.dtype) # get barycentric weights for quadrature
-    weights = get_quad_points(degree, device, A.dtype).unsqueeze(dim=-1)
+    weights = get_weights(degree, device, A.dtype).unsqueeze(dim=-1)
     for i in range(time_steps):
         #interpolate data
         u1 = torch.stack(get_interpolation(data[i], degree, quad_points), dim=0)
@@ -36,7 +36,7 @@ def get_modes(A, data, num_modes, time_steps, cell_size, cell_to_vertex, degree,
         q = q.reshape(-1,1)
         eta_i = (q * data).sum(dim = 0) / denom[[j]]
         #set up data for integration
-        v = eta_i.cpu().detach().numpy()
+        v = eta_i.detach().cpu().numpy()
         solutions = torch.tensor([v[x] for x in cell_to_vertex], dtype=dtype).to(A.device)
         solutions = solutions.reshape(-1, 4).t().double()
 
@@ -73,7 +73,7 @@ def calc_P(modes, num_modes, jacobian, pd_func, interp_coord, degree, device, dt
     P = torch.zeros(num_modes, 1).to(modes.device).to(dtype)
     l = []
     for i in range(len(quad_points)):
-        l.append(pd_func(interp_coord[i]), Nu_idx)
+        l.append(pd_func(interp_coord[i], Nu_idx))
     power_density = torch.stack(l, dim=0)
     power_density = weights * power_density
     for i in range(num_modes):

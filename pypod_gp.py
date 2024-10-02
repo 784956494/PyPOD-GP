@@ -19,7 +19,7 @@ class PyPOD_GP:
         self.subdomain_config = subdomain_config #configurations for subdomain
         self.modes_data = [] #save the modes for prediction
         self.degree = args.degree #degree of quadrature interation
-
+        self.sampling_interval = args.sampling_interval
     def prcoess_data(self, datapath):
         assert(self.time_steps > 0)
         #form mesh
@@ -126,15 +126,13 @@ class PyPOD_GP:
         grad_coord = coord.permute(1, 0, 2).reshape(-1, 4, 3).reshape(4, -1, 3)
         temp_coord = coord.permute(2, 1, 0).reshape(3, 4, -1)
         w = utils.get_quad_points(4, self.device)
-        # interp_coord = utils.get_interp_coord(temp_coord, w)
+        interp_coord = utils.get_interp_coord(temp_coord, w)
         coord = coord.permute(2, 0, 1).reshape(4, -1, 3).reshape(3, -1)
 
         #Compute A matrix
         A = utils.calc_A(data, self.time_steps, jacobian.to(data.dtype), self.device, self.degree)
-
         #Compute POD modes
-        modes_data = utils.get_modes(A, vertex_data, num_modes, self.data_size, self.time_steps, jacobian, cell_to_vertex)
-    
+        modes_data = utils.get_modes(A, vertex_data, num_modes, self.time_steps, jacobian, cell_to_vertex, self.degree, torch.float64)
         #read in modes
         modes = torch.zeros(num_modes, 4, self.data_size).double().to(self.device)
         ds_modes = torch.zeros(num_modes, 3, len(ds_dofs) // 3).double().to(self.device)
@@ -146,7 +144,6 @@ class PyPOD_GP:
 
         #Compute C matrix
         C = utils.calc_C(modes, num_modes, jacobian, density_expression, heat_expression, coord, self.device, self.degree, torch.float64)
-
         #compute jacobian for surface integral
         temp_ds_coord = ds_coord.reshape(-1, 3, 3).permute(1, 0, 2).reshape(-1, 3, 3).reshape(3, -1, 3)
         t1 = temp_ds_coord[1] - temp_ds_coord[0]
@@ -156,40 +153,43 @@ class PyPOD_GP:
         
         #Compute G matrix
         G = utils.calc_G(modes, num_modes, kappa_expression, h_c, jacobian, coord, grad_coord, ds_area, ds_modes)
-        
         #Compute P vector
         if idx != -1:
             #calculate specifically for a single functional unit
-            P = utils.calc_P(modes, num_modes, jacobian, pd_func, coord, self.degree, self.device, torch.float64)
+            P = utils.calc_P(modes, num_modes, jacobian, pd_func, interp_coord, self.degree, self.device, torch.float64)
         else:
             #calculate for all functional units, to be used when doing prediction over entire chip and not over each individual functional units
             P = torch.zeros(self.Nu, num_modes).double().to(self.device)
             for i in range(self.Nu):
-                P_vec = utils.calc_P(modes, num_modes, jacobian, pd_func, coord, self.degree, self.device, torch.float64, i)
-                P[i] = P_vec
+                P_vec = utils.calc_P(modes, num_modes, jacobian, pd_func, interp_coord, self.degree, self.device, torch.float64, i)
+                P[i] = P_vec.squeeze(dim=-1)
             P = P.t()
         #save modes for temperature
-        self.modes_data.append(modes_data.cpu())
+        self.modes_data.append(torch.tensor(modes_data, dtype=torch.float64).to('cpu'))
         return C, G, P
 
     def infer(self, C, G, P, multiple=True):
         #run ODE solver
-        ode_solver = utils.POD_ODE_Solver(C, G, P, self.time_steps, self.num_modes, self.time_steps, self.sampling_interval, multiple)
+        ode_solver = utils.POD_ODE_Solver(C, G, P, self.time_steps, self.num_modes, self.sampling_interval / 20, self.sampling_interval, multiple)
         CU = ode_solver.solve()
         return CU
         
-    def predict_thermal(self, CU):
+    def predict_thermal(self, CU, multiple=True):
+        Nu = self.Nu
+        if not multiple:
+            self.Nu = 1
+        CU = CU.reshape(self.Nu, self.time_steps, self.num_modes)
         #move modes to proper device
         for i in range(self.Nu):
-            self.modes_data[i] = self.modes_data.to(self.device)
+            self.modes_data[i] = self.modes_data[i].to(self.device)
         #predict thermal
         temps = []
-        temps = []
         for j in range(self.Nu):
-            temp = torch.zeros(self.time_steps, self.data_size).double().to(self.device)
+            temp = torch.zeros(self.time_steps, self.modes_data[j].shape[-1]).double().to(self.device)
             for i in range(self.time_steps):
-                x = CU[i].reshape(1,-1).t()
+                x = CU[j][i].reshape(1,-1).t()
                 x = x.reshape(-1,1)
-                temp[i] = (self.modes_data * x).sum(dim=0)
-            temps.appendt(temp)
+                temp[i] = (self.modes_data[j] * x).sum(dim=0)
+            temps.append(temp)
+        self.Nu = Nu
         return temps

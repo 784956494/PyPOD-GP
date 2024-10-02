@@ -80,7 +80,7 @@ def run_prediction(args):
             'boundaries': [BoundaryX0(), BoundaryX1(), BoundaryY0(), BoundaryY1(), BoundaryZ0(), BoundaryZ1()]
         }
 
-        model = PyPOD_GP(args, pds, device, subdomain_data)
+        model = PyPOD_GP(args, device, subdomain_data)
 
         datapath = [[0]*args.timesteps] * args.Nu
         for j in range(args.Nu):

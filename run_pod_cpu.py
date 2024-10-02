@@ -78,7 +78,7 @@ def run_prediction(args):
         'boundaries': [BoundaryX0(), BoundaryX1(), BoundaryY0(), BoundaryY1(), BoundaryZ0(), BoundaryZ1()]
     }
 
-    model = PyPOD_GP(args, pds, device, subdomain_data)
+    model = PyPOD_GP(args, device, subdomain_data)
 
     datapath = []
     for i in range(args.time_steps):
@@ -96,8 +96,8 @@ def run_prediction(args):
 
     Ps_matrix = Ps_matrix.t()
 
-    CU = model.infer(C_list, G_list, P_list)
-    temps = model.predict_thermal(CU)
+    CU = model.infer(C, G, Ps_matrix, multiple=False)
+    temps = model.predict_thermal(CU, multiple=False)
     if args.save_format == 'csv':
         df = pd.DataFrame(temps.detach().cpu().numpy()) #convert to a dataframe
         df.to_csv(args.save_dir + "temsp.csv",index=False, header=False) #save to file

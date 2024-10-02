@@ -90,8 +90,10 @@ def get_quad_points(deg, device, dtype=torch.float64):
         raise NotImplementedError("Degree not implemented")
 
 def get_weights(deg, device, dtype=torch.float64):
-    if deg <= 2:
-        return 0.25
+    if deg == 1:
+        return torch.tensor(0.25, device=device, dtype=dtype)
+    elif deg == 2:
+        return torch.tensor([0.25, 0.25, 0.25, 0.25], device=device, dtype=dtype)
     elif deg == 3:
         w = torch.zeros(5, device=device, dtype=dtype)
         w[0] = -0.8
