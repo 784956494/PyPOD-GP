@@ -1,5 +1,5 @@
 # PyPOD-GP
-In repository, we implement a Pytorch-based implementation of the (localized) POD-GP method that enables GPU utilization during both the learnining and inferece stages. We provide an example running script in ```run_pod.py``` for reference.
+In repository, we implement a prototype Pytorch-based implementation of the (localized) POD-GP method that enables GPU utilization during both the learnining and inferece stages. We provide an example running script in ```run_pod.py``` for reference.
 
 ## Setup
 To use our code, first create a Python 3.10 environment and install FEniCS, Dolfin, and mshr following the instructions from their official website: 
