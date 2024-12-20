@@ -1,5 +1,5 @@
 # PyPOD-GP
-In repository, we implement a Pytorch-based implementation of the (localized) POD-GP method that enables GPU utilization during both the learnining and inferece stages. We provide an example running script in ```run_pod.py``` for reference.
+In this repository, we implement a prototype Pytorch-based implementation of the (localized) POD-GP method that enables GPU utilization during both the learnining and inferece stages. We provide an example running script in ```run_pod.py``` for reference.
 
 ## Setup
 To use our code, first create a Python 3.10 environment and install FEniCS, Dolfin, and mshr following the instructions from their official website: 
@@ -64,4 +64,16 @@ https://drive.google.com/drive/folders/1-id6igacZXYnFBT5M6_n7BC4vvWY6NVF?usp=sha
 The data was collected on a AMD ATHLON II X4 610e CPU chip. After downloading the dataset, edit the ```run_pod_cpu.py``` file for the corresponding paths of the files. The parameters in the ```config.py``` was already configured for this dataset. To run the code, simply run the command:
 ```
 python run_pod_cpu.py
+```
+
+## Citations
+If you find this repository useful and use PyPOD-GP in your research, use cite the following:
+```
+Lin Jiang, Anthony Dowling, Yu Liu, Ming-C. Cheng, Ensemble learning model for effective thermal simulation of multi-core CPUs, Integration, Elsevier, Volume 97, 2024
+
+Lin Jiang, Anthony Dowling, Ming-Cheng Cheng, Yu Liu, PODTherm-GP: A Physics-based Data-Driven Approach for Effective Architecture-Level Thermal Simulation of Multi-Core CPUs, IEEE Transactions on Computers, 72(10), 2023.10
+
+Alessandro Pulimeno, Graham Coates-Farley, Martin Veresko, Lin Jiang, Ming-Cheng Cheng, Yu Liu, Daqing Hou, Physics-driven Proper Orthogonal Decomposition: A Simulation Methodology for Partial Differential Equations, MethodsX, Elsevier, 10 (2023), 2023.4
+
+Lin Jiang, Yu Liu, Ming-Cheng Cheng, Fast Accurate Full-Chip Dynamic Thermal Simulation with Fine Resolution Enabled by a Learning Method, IEEE Transactions on Computer-Aided Design of Integrated Circuits and Systems, Vol. 42, Issue 8, 2022.12
 ```
